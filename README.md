@@ -24,6 +24,8 @@ Endereço: https://h2oconex-brazil.github.io/separacao-h2oconex/
 Cadastro de produtos, pedidos e histórico ficam no navegador de cada aparelho (não vão para o GitHub). Baixe o CSV do histórico de tempos em tempos.
 
 ## Histórico de versões
+- v1.2.2: "Encerrar com pendência" mostra a confirmação na tela e some quando a conferência já terminou.
+- v1.2.1: lista de pedidos com nome longo não desalinha mais a situação.
 - v1.2.0: fluxo papel → prateleira → contagem → OK; importação/exportação do cadastro; produtos.csv como cadastro oficial.
 - v1.1.0: app instalável e funcionamento offline.
 - v1.0.0: primeira versão (leitura do PDF, lista de separação, etiquetas, conferência e histórico).

@@ -3,7 +3,7 @@
 // se estiver sem internet, usa a última cópia guardada. Assim as atualizações
 // chegam sozinhas e o sistema continua funcionando offline.
 // Ao publicar uma versão nova, troque o número abaixo.
-const VERSAO = 'v1.2.0';
+const VERSAO = 'v1.2.2';
 const CACHE = 'separacao-' + VERSAO;
 const ARQUIVOS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
