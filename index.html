@@ -160,12 +160,41 @@ td input[type=text]{width:100%}
 .pl.narrow table{font-size:8.5pt}
 .pl.narrow th,.pl.narrow td{padding:1.2mm 0.8mm}
 
+
+.passos{display:flex; flex-wrap:wrap; gap:6px}
+.passos span{font-size:13px; font-weight:600; padding:6px 10px; border-radius:99px; background:var(--bg); color:var(--muted); border:1px solid var(--line)}
+.passos span.on{background:var(--accent); color:var(--accent-ink); border-color:var(--accent)}
+.atual{display:grid; gap:4px}
+.atual:empty{display:none}
+.at-top{display:flex; justify-content:space-between; gap:10px; align-items:baseline}
+.at-top .loc{font:700 15px var(--f-mono); color:var(--accent)}
+.at-cod{font:700 34px/1.1 var(--f-mono); letter-spacing:.02em}
+.at-q{font:700 30px var(--f-mono); font-variant-numeric:tabular-nums}
+.at-q small{font-size:16px; color:var(--muted)}
+.at-acao{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:6px}
+.at-acao #qtd{font:700 24px var(--f-mono); width:8ch}
+.it.falta{border-left-color:var(--bad)}
+details.imp{border-top:1px solid var(--line); padding-top:10px}
+details.imp summary{cursor:pointer; font-weight:600}
+textarea{background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:8px 10px; width:100%; font-family:var(--f-mono); font-size:13px}
+.pl .como{font-size:9pt; margin:0 0 3mm}
+.pl .pi{border:0.4mm solid #000; padding:2.5mm; margin-bottom:3mm; break-inside:avoid; page-break-inside:avoid; display:grid; gap:1mm}
+.pl .pi-top{display:flex; justify-content:space-between; font-size:9pt; font-weight:700}
+.pl .pi-cod{font:700 15pt var(--f-mono)}
+.pl .pi-nm{font-size:9.5pt}
+.pl .pi-bot{display:flex; justify-content:space-between; align-items:center}
+.pl .pi-q{font:700 14pt var(--f-mono)}
+.pl .pbc{text-align:center}
+.pl .pbc svg{margin:1mm auto 0}
+.pl .pbc-t{font:700 8.5pt var(--f-mono)}
+.pl .ft .pbc{border:0.4mm dashed #000; padding:2mm}
+.pl.narrow .pi-cod{font-size:13pt}
 @media (prefers-reduced-motion: reduce){ *{transition:none !important} }
 </style>
 </head>
 <body>
 <header class="top"><div class="wrap">
-  <div class="brand"><b>H2O CONEX</b><span>Separação e conferência · <span class="mono" title="Versão do sistema">v1.1.0</span></span></div>
+  <div class="brand"><b>H2O CONEX</b><span>Separação e conferência · <span class="mono" title="Versão do sistema">v1.2.0</span></span></div>
   <nav class="tabs" role="tablist">
     <button role="tab" data-tab="pedido" aria-selected="true">1 · Pedido</button>
     <button role="tab" data-tab="conf" aria-selected="false">2 · Conferência</button>
@@ -209,9 +238,8 @@ td input[type=text]{width:100%}
     </table></div>
     <div class="row">
       <label class="fld">Formato da lista
-        <select id="lista-fmt"><option value="a4">Folha A4 (impressora comum)</option><option value="80">Bobina 80 mm (impressora de cupom)</option></select>
+        <select id="lista-fmt"><option value="80">Bobina 80 mm (impressora de cupom)</option><option value="a4">Folha A4 (impressora comum)</option></select>
       </label>
-      <label class="chk" style="max-width:520px"><input type="checkbox" id="lista-bc"> <span>Incluir código de barras de cada produto na lista. <span class="muted">Deixe desmarcado: se o código estiver no papel, o separador pode bipar a lista em vez da prateleira e a conferência perde o sentido.</span></span></label>
     </div>
   </div>
 </section>
@@ -220,8 +248,9 @@ td input[type=text]{width:100%}
 <section class="tab" id="tab-conf" hidden>
   <div class="panel" id="conf-vazio">
     <h2>Nenhuma conferência em andamento</h2>
-    <p class="note" style="margin:0">Carregue um pedido na aba 1 e clique em <strong>Começar conferência</strong>, ou bipe aqui o código do pedido impresso na lista de separação (PED + número).</p>
-    <input type="text" id="scan-ped" placeholder="Bipe o código do pedido (ex.: PED116)" autocomplete="off">
+    <p class="note" style="margin:0">Bipe o código do pedido (PED…) ou o item 1 no papel da lista de separação. Também dá para abrir pela aba 1 com <strong>Começar conferência</strong>.</p>
+    <input type="text" id="scan-ped" placeholder="Bipe o papel (ex.: PED116)" autocomplete="off">
+    <div class="msg" id="msg-ped"></div>
   </div>
 
   <div id="conf-ativa" hidden style="display:grid; gap:16px">
@@ -229,23 +258,21 @@ td input[type=text]{width:100%}
       <div><div class="eyebrow">Conferindo</div><h1 id="conf-titulo"></h1><div id="conf-sub" class="muted"></div></div>
       <div class="row">
         <label class="fld">Separador<input type="text" id="operador" placeholder="Nome de quem separou"></label>
-        <label class="fld">Como conferir a quantidade
-          <select id="modo"><option value="digitar">Bipar 1 vez e digitar a quantidade</option><option value="unidade">Bipar cada unidade</option></select>
+        <label class="fld">Confirmação da contagem
+          <select id="modo"><option value="ok">Contar e dar OK</option><option value="digitar">Contar e digitar a quantidade</option></select>
         </label>
       </div>
     </div>
 
     <div class="scanbar" id="scanbar">
-      <label for="scan" class="eyebrow">Bipe a etiqueta da prateleira</label>
-      <input type="text" id="scan" autocomplete="off" spellcheck="false" placeholder="Aguardando leitura…">
-      <div class="msg" id="msg"></div>
-      <div class="qtybox" id="qtybox" hidden>
-        <div><span class="mono" id="qty-code" style="font-weight:700"></span> <span id="qty-name" class="muted"></span></div>
-        <div class="q"><label for="qtd" style="font-weight:600">Quantos você separou?</label>
-          <input type="text" id="qtd" inputmode="decimal" autocomplete="off"><span id="qty-und" class="mono"></span>
-          <button class="btn primary" id="qty-ok">Confirmar (Enter)</button>
-          <button class="btn" id="qty-cancel">Cancelar</button></div>
+      <div class="passos" id="passos">
+        <span data-f="papel">1 · Bipe o item no papel</span>
+        <span data-f="prateleira">2 · Bipe a prateleira</span>
+        <span data-f="contagem">3 · Conte e dê OK</span>
       </div>
+      <input type="text" id="scan" autocomplete="off" spellcheck="false" placeholder="Aguardando leitura…" aria-label="Leitura do código de barras">
+      <div class="msg" id="msg"></div>
+      <div class="atual" id="atual"></div>
       <div class="row" style="justify-content:space-between">
         <span class="num" id="conf-prog-txt"></span>
         <span class="num" id="conf-erros"></span>
@@ -292,6 +319,24 @@ td input[type=text]{width:100%}
         <button class="btn" id="novo-add">Adicionar</button>
       </div>
       <div id="novo-msg" class="note"></div>
+      <details class="imp" id="imp-box">
+        <summary>Importar ou exportar o cadastro de produtos</summary>
+        <div style="display:grid; gap:10px; padding-top:10px">
+          <p class="note" style="margin:0">Copie do Excel as colunas <strong>Código</strong> e <strong>Descrição</strong> (e <strong>Local</strong>, se tiver) e cole abaixo, ou escolha um arquivo CSV. A primeira linha pode ser o cabeçalho.</p>
+          <textarea id="imp-txt" rows="5" placeholder="CRM1214&#9;REGISTRO MACHO 1/2 P/ MANG 1/4&#9;A-01"></textarea>
+          <div class="row">
+            <input type="file" id="imp-arq" accept=".csv,.txt,text/csv">
+            <label class="chk"><input type="checkbox" id="imp-subst"> Substituir todo o cadastro (apaga códigos que não estiverem na lista)</label>
+          </div>
+          <div class="row">
+            <button class="btn primary" id="imp-ok">Importar</button>
+            <button class="btn" id="exp-csv">Baixar produtos.csv</button>
+          </div>
+          <div id="imp-msg" class="note"></div>
+          <p class="note" style="margin:0"><strong>Para valer em todos os aparelhos:</strong> baixe o produtos.csv e suba no GitHub junto com o index.html. Ao abrir, cada aparelho lê esse arquivo e atualiza o cadastro sozinho.</p>
+        </div>
+      </details>
+      <div id="sync-msg" class="note"></div>
     </div>
     <div class="panel" style="align-content:start">
       <div class="eyebrow">Impressão</div>
@@ -456,9 +501,10 @@ let catalogo = ler(K.cat, null);
 if (!catalogo){ catalogo = {}; for (const [c,n] of Object.entries(SKUS_INICIAIS)) catalogo[c] = { nome:n, local:'', origem:'planilha', copias:1 }; gravar(K.cat, catalogo); }
 let pedidos = ler(K.ped, {});
 let historico = ler(K.hist, []);
-let cfg = Object.assign({ tam:'60x40', modo:'digitar', operador:'', listaFmt:'a4' }, ler(K.cfg, {}));
+let cfg = Object.assign({ tam:'60x40', modo:'ok', operador:'', listaFmt:'80' }, ler(K.cfg, {}));
 let pedAtual = null;
 let conf = ler(K.conf, null);
+if (conf && !conf.fase) conf = null; // conferência salva por versão antiga
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -592,65 +638,89 @@ function mostrarPedido(num){
   $('#ped-itens').innerHTML = itensComLocal(p).map(it => `<tr><td class="num">${it.item}</td><td class="mono">${esc(it.local) || '<span class="muted">—</span>'}</td><td class="mono">${esc(it.codigo)}</td><td>${esc(it.nome)}</td><td class="r num">${fmtQ(it.qtd)}</td><td>${esc(it.und)}</td></tr>`).join('');
 }
 
+/* ---------- sequência do pedido (a mesma no papel e na tela) ---------- */
+function sequencia(ped){
+  const loc = c => (catalogo[c] && catalogo[c].local) || '';
+  const mapa = {};
+  for (const it of ped.itens){
+    if (!mapa[it.codigo]) mapa[it.codigo] = { codigo:it.codigo, nome:it.nome, und:it.und, qtd:0, item:it.item };
+    mapa[it.codigo].qtd += it.qtd;
+  }
+  let codigos = ped.seq && ped.seq.every(c => mapa[c]) && ped.seq.length === Object.keys(mapa).length ? ped.seq : null;
+  if (!codigos){
+    codigos = Object.values(mapa).sort((a,b) => (loc(a.codigo)||'~').localeCompare(loc(b.codigo)||'~', 'pt-BR', { numeric:true }) || a.item - b.item).map(i => i.codigo);
+    ped.seq = codigos; gravar(K.ped, pedidos);
+  }
+  return codigos.map((c,k) => ({ ...mapa[c], seq:k + 1, local:loc(c) }));
+}
+const codPapel = (num, n) => 'P' + num + 'I' + String(n).padStart(2, '0');
+
 /* ---------- lista de separação ---------- */
 $('#lista-fmt').value = cfg.listaFmt;
 $('#lista-fmt').onchange = e => { cfg.listaFmt = e.target.value; gravar(K.cfg, cfg); };
 $('#btn-lista').onclick = () => {
   const p = pedAtual; if (!p) return;
   const estreito = $('#lista-fmt').value === '80';
-  const comBc = $('#lista-bc').checked;
-  const itens = itensComLocal(p).sort((a,b) => (a.local||'~').localeCompare(b.local||'~', 'pt-BR', { numeric:true }) || a.item - b.item);
+  const itens = sequencia(p);
+  const larg = estreito ? 62 : 70;
   const box = document.createElement('div');
   box.className = 'pl' + (estreito ? ' narrow' : '');
   box.innerHTML = `
     <div class="hd">
       <div><h1>LISTA DE SEPARAÇÃO</h1>
         <div class="meta"><b>Pedido ${esc(p.numero)}</b> · ${esc(p.data)}<br>${esc(p.fantasia || p.cliente)}<br>${p.prazo ? 'Entrega: ' + esc(p.prazo) + '<br>' : ''}Impresso em ${hhmm(agora())}</div></div>
-      <div class="pbc" style="text-align:center"></div>
+      <div class="pbc" data-bc="PED${esc(p.numero)}"></div>
     </div>
     ${p.obs ? `<div class="obs"><b>OBS.:</b> ${esc(p.obs)}</div>` : ''}
-    <table><thead><tr><th>Local</th><th>Código</th>${estreito ? '' : '<th>Descrição</th>'}<th style="text-align:right">Qtd</th><th>Und</th><th>OK</th></tr></thead><tbody>
-    ${itens.map((it,k) => `<tr><td>${esc(it.local) || '—'}</td><td><b style="font-family:var(--f-mono)">${esc(it.codigo)}</b>${estreito ? '<br>' + esc(it.nome) : ''}<div class="ibc" data-k="${k}"></div></td>${estreito ? '' : `<td>${esc(it.nome)}</td>`}<td style="text-align:right"><b>${fmtQ(it.qtd)}</b></td><td>${esc(it.und)}</td><td><span class="cx"></span></td></tr>`).join('')}
-    </tbody></table>
+    <div class="como">Para cada item: 1) bipe o código do item neste papel, 2) bipe a etiqueta da prateleira, 3) conte e dê OK.</div>
+    ${itens.map(it => `
+      <div class="pi">
+        <div class="pi-top"><span>ITEM ${it.seq} de ${itens.length}</span><span>${it.local ? 'LOCAL ' + esc(it.local) : ''}</span></div>
+        <div class="pi-cod">${esc(it.codigo)}</div>
+        <div class="pi-nm">${esc(it.nome)}</div>
+        <div class="pi-bot"><div class="pi-q">QTD ${fmtQ(it.qtd)} ${esc(it.und)}</div><span class="cx"></span></div>
+        <div class="pbc" data-bc="${codPapel(p.numero, it.seq)}"></div>
+      </div>`).join('')}
     <div class="ft">
-      <div>${itens.length} item(ns). Confira cada produto bipando a etiqueta da prateleira, não esta folha.</div>
+      <div class="pbc" data-bc="OK" data-rot="OK · confirma a contagem (ou tecla Enter)"></div>
       <div class="sig"><span>Separado por</span><span>Data / hora</span></div>
     </div>`;
-  const pb = svgBarcode('PED' + p.numero, estreito ? 9 : 12, estreito ? 60 : 70);
-  if (pb.svg){ box.querySelector('.pbc').append(pb.svg); const t = document.createElement('div'); t.style.cssText = 'font:700 9pt var(--f-mono)'; t.textContent = 'PED' + p.numero; box.querySelector('.pbc').append(t); }
-  if (comBc) box.querySelectorAll('.ibc').forEach(d => { const r = svgBarcode(itens[+d.dataset.k].codigo, 7, estreito ? 40 : 45); if (r.svg) d.append(r.svg); });
+  box.querySelectorAll('.pbc').forEach(d => {
+    const r = svgBarcode(d.dataset.bc, estreito ? 10 : 11, larg);
+    if (r.svg) d.append(r.svg);
+    const t = document.createElement('div'); t.className = 'pbc-t'; t.textContent = d.dataset.rot || d.dataset.bc; d.append(t);
+  });
   imprimir(box, estreito ? '@page{ margin:2mm }' : '@page{ size:A4; margin:12mm }');
 };
 
 /* ---------- conferência ---------- */
 $('#btn-iniciar').onclick = () => { if (pedAtual) iniciarConferencia(pedAtual.numero); };
-$('#modo').value = cfg.modo;
-$('#modo').onchange = e => { cfg.modo = e.target.value; gravar(K.cfg, cfg); if (conf){ conf.modo = cfg.modo; salvarConf(); } fecharQtd(); focarLeitura(); };
+$('#modo').value = cfg.modo === 'digitar' ? 'digitar' : 'ok';
+$('#modo').onchange = e => { cfg.modo = e.target.value; gravar(K.cfg, cfg); if (conf){ conf.modo = cfg.modo; salvarConf(); desenharConf(); } focarLeitura(); };
 $('#operador').value = cfg.operador;
 $('#operador').oninput = e => { cfg.operador = e.target.value; gravar(K.cfg, cfg); if (conf){ conf.operador = e.target.value; salvarConf(); } };
 
 function iniciarConferencia(num){
   const p = pedidos[num]; if (!p) return false;
-  const mapa = {};
-  for (const it of p.itens){
-    if (!mapa[it.codigo]) mapa[it.codigo] = { codigo:it.codigo, nome:it.nome, und:it.und, qtd:0, conf:0 };
-    mapa[it.codigo].qtd += it.qtd;
-  }
-  conf = { numero:p.numero, cliente:p.fantasia || p.cliente, obs:p.obs, itens:Object.values(mapa), erros:[], inicio:agora().toISOString(), operador:cfg.operador, modo:cfg.modo, fim:null };
+  conf = { numero:p.numero, cliente:p.fantasia || p.cliente, obs:p.obs,
+    itens:sequencia(p).map(i => ({ ...i, status:'pendente' })), idx:0, fase:'papel',
+    erros:[], inicio:agora().toISOString(), operador:cfg.operador, modo:cfg.modo === 'digitar' ? 'digitar' : 'ok', fim:null };
   salvarConf(); abrirAba('conf'); desenharConf();
   const ja = historico.filter(h => h.numero === num && h.status === 'completo').length;
-  mensagem(ja ? `Atenção: o pedido ${num} já foi conferido antes. Conferindo de novo.` : 'Pronto. Bipe a primeira etiqueta.', ja ? 'warn' : '');
+  mensagem(ja ? `Atenção: o pedido ${num} já foi conferido antes. Conferindo de novo.` : 'Pronto. Bipe o item 1 no papel.', ja ? 'warn' : '');
   return true;
 }
 function salvarConf(){ gravar(K.conf, conf); }
+function atual(){ return conf && conf.itens[conf.idx]; }
 function focarLeitura(){
   if ($('#tab-conf').hidden) return;
   if (!conf){ $('#scan-ped').focus(); return; }
-  if (!$('#qtybox').hidden) $('#qtd').focus(); else if (!conf.fim) $('#scan').focus();
+  const q = $('#qtd');
+  if (q && conf.fase === 'contagem' && conf.modo === 'digitar') q.focus(); else if (!conf.fim) $('#scan').focus();
 }
 document.addEventListener('click', e => {
   if ($('#tab-conf').hidden) return;
-  if (e.target.closest('input,select,button,textarea,label')) return;
+  if (e.target.closest('input,select,button,textarea,label,summary')) return;
   focarLeitura();
 });
 
@@ -658,83 +728,101 @@ function mensagem(txt, tipo){ const m = $('#msg'); m.textContent = txt; m.classN
 function flash(tipo){ const s = $('#scanbar'); s.classList.remove('flash-ok','flash-bad'); void s.offsetWidth; s.classList.add(tipo === 'ok' ? 'flash-ok' : 'flash-bad'); clearTimeout(flash.t); flash.t = setTimeout(() => s.classList.remove('flash-ok','flash-bad'), tipo === 'ok' ? 500 : 1800); }
 function erro(tipo, txt, lido){
   conf.erros.push({ hora:agora().toISOString(), tipo, msg:txt, lido:lido||'' });
-  salvarConf(); bip('erro'); flash('bad'); mensagem(txt, 'bad'); desenharConf();
+  salvarConf(); bip('erro'); flash('bad'); desenharConf(); mensagem(txt, 'bad');
 }
+function aviso(txt){ bip('erro'); mensagem(txt, 'warn'); }
 
 $('#scan-ped').addEventListener('keydown', e => {
   if (e.key !== 'Enter') return;
   const v = normCod(e.target.value); e.target.value = '';
-  const num = v.replace(/^PED/, '');
-  if (pedidos[num]){ iniciarConferencia(num); }
-  else { bip('erro'); $('#scan-ped').placeholder = `Pedido ${num} não está carregado neste computador. Carregue o PDF na aba 1.`; }
+  const m = v.match(/^PED(\d+)$/) || v.match(/^P(\d+)I\d+$/);
+  const num = m ? m[1] : v;
+  if (pedidos[num]){ iniciarConferencia(num); if (/^P\d+I\d+$/.test(v)) processarLeitura(v); }
+  else { bip('erro'); $('#msg-ped').className = 'msg bad'; $('#msg-ped').textContent = `Pedido ${num} não está carregado neste aparelho. Carregue o PDF na aba 1.`; }
 });
 
 $('#scan').addEventListener('keydown', e => {
   if (e.key !== 'Enter') return;
   e.preventDefault();
   const v = normCod(e.target.value); e.target.value = '';
-  if (v) processarLeitura(v);
+  if (!v){ if (conf && conf.fase === 'contagem') confirmarContagem(); return; }
+  processarLeitura(v);
 });
+
 function processarLeitura(cod){
   if (!conf || conf.fim) return;
-  if (/^PED\d+$/.test(cod)){
-    const num = cod.slice(3);
-    if (num === conf.numero){ mensagem('Este é o código do pedido. Bipe as etiquetas das prateleiras.', 'warn'); bip('erro'); return; }
-    mensagem(`Você bipou o pedido ${num}, mas está conferindo o ${conf.numero}. Termine este ou use "Recomeçar".`, 'bad'); bip('erro'); flash('bad'); return;
-  }
-  const it = conf.itens.find(i => i.codigo === cod);
-  if (!it){ erro('fora', `${cod} NÃO faz parte deste pedido. Devolva à prateleira.`, cod); return; }
-  if (it.conf >= it.qtd){ erro('excesso', `${cod} já está completo (${fmtQ(it.qtd)} ${it.und}). Não separe mais.`, cod); return; }
-  if (conf.modo === 'unidade'){
-    it.conf += 1; salvarConf(); bip('ok'); flash('ok');
-    mensagem(`${cod}: ${fmtQ(it.conf)} de ${fmtQ(it.qtd)} ${it.und}`, 'ok');
-    destacar(cod); desenharConf(); verificarFim();
-  } else {
-    abrirQtd(it);
-  }
-}
-function abrirQtd(it){
-  bip('ok');
-  $('#qtybox').hidden = false; $('#qtybox').dataset.cod = it.codigo;
-  $('#qty-code').textContent = it.codigo; $('#qty-name').textContent = it.nome;
-  $('#qty-und').textContent = it.und;
-  $('#qtd').value = '';
-  mensagem(`Produto certo: ${it.codigo}. Agora informe a quantidade separada.`, 'ok');
-  destacar(it.codigo); $('#qtd').focus();
-}
-function fecharQtd(){ $('#qtybox').hidden = true; delete $('#qtybox').dataset.cod; }
-function confirmarQtd(){
-  const cod = $('#qtybox').dataset.cod; const it = conf && conf.itens.find(i => i.codigo === cod); if (!it) return;
-  const bruto = $('#qtd').value.trim();
-  // Se o leitor disparou dentro do campo de quantidade, trata como nova leitura
-  if (/[A-Za-z]/.test(bruto)){ fecharQtd(); erro('sem-qtd', `Quantidade de ${cod} não informada antes da próxima leitura.`, cod); processarLeitura(normCod(bruto)); return; }
-  const q = parseFloat(bruto.replace(/\./g,'').replace(',', '.'));
-  if (!isFinite(q) || q <= 0){ mensagem('Digite a quantidade separada.', 'warn'); $('#qtd').focus(); return; }
-  const falta = it.qtd - it.conf;
-  if (Math.abs(q - falta) > 1e-9){
-    fecharQtd();
-    erro('qtd', `Quantidade errada em ${cod}: você informou ${fmtQ(q)}, o pedido pede ${fmtQ(falta)} ${it.und}. Reconte e bipe de novo.`, cod);
+  const it = atual();
+  if (cod === 'OK'){ if (conf.fase === 'contagem') confirmarContagem(); else aviso(conf.fase === 'papel' ? `Ainda não. Bipe o item ${it.seq} no papel.` : `Ainda não. Bipe a prateleira de ${it.codigo}.`); return; }
+  let m = cod.match(/^PED(\d+)$/);
+  if (m){ aviso(m[1] === conf.numero ? 'Este é o código do pedido. Bipe o código do item no papel.' : `Você bipou o pedido ${m[1]}, mas está conferindo o ${conf.numero}.`); return; }
+  m = cod.match(/^P(\d+)I(\d+)$/);
+  if (m){
+    const num = m[1], n = parseInt(m[2], 10);
+    if (num !== conf.numero){ erro('papel', `Papel de outro pedido (${num}). Você está conferindo o pedido ${conf.numero}.`, cod); return; }
+    const alvo = conf.itens[n - 1];
+    if (!alvo){ erro('papel', `O pedido ${num} não tem item ${n}. A lista impressa pode estar desatualizada; imprima de novo.`, cod); return; }
+    if (alvo.status === 'ok' || alvo.status === 'falta'){ aviso(`O item ${n} (${alvo.codigo}) já foi ${alvo.status === 'ok' ? 'conferido' : 'marcado em falta'}. Agora é o item ${it.seq}.`); return; }
+    if (n - 1 !== conf.idx){ erro('ordem', `Siga a ordem do papel: agora é o item ${it.seq} (${it.codigo}), não o ${n}.`, cod); return; }
+    if (conf.fase === 'contagem'){ aviso(`O item ${n} já está liberado. Conte e dê OK.`); return; }
+    conf.fase = 'prateleira'; salvarConf(); bip('ok'); desenharConf();
+    mensagem(`Item ${n}: ${it.codigo}. Vá até a prateleira e bipe a etiqueta.`, 'ok');
     return;
   }
-  it.conf = it.qtd; fecharQtd(); salvarConf(); bip('ok'); flash('ok');
-  mensagem(`${cod} conferido: ${fmtQ(it.qtd)} ${it.und}.`, 'ok');
-  desenharConf(); verificarFim(); focarLeitura();
+  // Qualquer outra leitura é uma etiqueta de prateleira (código do produto)
+  if (conf.fase === 'papel'){ aviso(`Bipe primeiro o item ${it.seq} no papel, depois a prateleira.`); return; }
+  if (conf.fase === 'contagem'){
+    if (cod === it.codigo) aviso(`${cod} já foi liberado. Conte e dê OK.`);
+    else erro('prateleira', `Prateleira errada: ${cod}. O item liberado é ${it.codigo}. Não pegue desta prateleira.`, cod);
+    return;
+  }
+  if (cod !== it.codigo){
+    const outro = conf.itens.find(i => i.codigo === cod);
+    erro('prateleira', outro ? `Prateleira errada: ${cod} é o item ${outro.seq}. Agora é ${it.codigo}${it.local ? ' (local ' + it.local + ')' : ''}.` : `Prateleira errada: ${cod} não faz parte deste pedido. Procure ${it.codigo}${it.local ? ' no local ' + it.local : ''}.`, cod);
+    return;
+  }
+  conf.fase = 'contagem'; salvarConf(); bip('ok'); flash('ok'); desenharConf();
+  mensagem(`LIBERADO: pegue ${fmtQ(it.qtd)} ${it.und} de ${it.codigo}. Conte e ${conf.modo === 'digitar' ? 'digite a quantidade' : 'dê OK'}.`, 'ok');
+  focarLeitura();
 }
-$('#qty-ok').onclick = confirmarQtd;
-$('#qty-cancel').onclick = () => { fecharQtd(); mensagem('Leitura cancelada. Bipe a etiqueta de novo.', 'warn'); focarLeitura(); };
-$('#qtd').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); confirmarQtd(); } if (e.key === 'Escape'){ $('#qty-cancel').click(); } });
 
-function destacar(cod){ clearTimeout(destacar.t); document.querySelectorAll('.it').forEach(el => el.classList.toggle('hl', el.dataset.cod === cod)); const el = document.querySelector(`.it[data-cod="${CSS.escape(cod)}"]`); if (el) el.scrollIntoView({ block:'nearest', behavior:'smooth' }); destacar.t = setTimeout(() => document.querySelectorAll('.it.hl').forEach(e => e.classList.remove('hl')), 2500); }
-
-function verificarFim(){
-  if (!conf.itens.every(i => i.conf >= i.qtd)) return;
+function confirmarContagem(){
+  const it = atual(); if (!it || conf.fase !== 'contagem') return;
+  if (conf.modo === 'digitar'){
+    const bruto = ($('#qtd') && $('#qtd').value || '').trim();
+    if (/[A-Za-z]/.test(bruto)){ $('#qtd').value = ''; if (normCod(bruto) === 'OK'){ mensagem('Digite a quantidade contada antes de confirmar.', 'warn'); return; } erro('sem-qtd', `Quantidade de ${it.codigo} não informada antes da próxima leitura.`, bruto); processarLeitura(normCod(bruto)); return; }
+    const q = parseFloat(bruto.replace(/\./g,'').replace(',', '.'));
+    if (!isFinite(q) || q <= 0){ mensagem('Digite a quantidade contada.', 'warn'); focarLeitura(); return; }
+    if (Math.abs(q - it.qtd) > 1e-9){ $('#qtd').value = ''; erro('qtd', `Contagem diferente em ${it.codigo}: você contou ${fmtQ(q)}, o pedido pede ${fmtQ(it.qtd)} ${it.und}. Reconte.`, it.codigo); focarLeitura(); return; }
+  }
+  it.status = 'ok'; bip('ok'); flash('ok');
+  avancar(`Item ${it.seq} (${it.codigo}) conferido.`);
+}
+function avancar(texto){
+  const prox = conf.itens.findIndex(i => i.status === 'pendente');
+  conf.fase = 'papel';
+  if (prox < 0){ salvarConf(); finalizar(); return; }
+  conf.idx = prox; salvarConf(); desenharConf();
+  mensagem(`${texto} Agora bipe o item ${conf.itens[prox].seq} no papel.`, 'ok');
+  focarLeitura();
+}
+function marcarFalta(){
+  const it = atual(); if (!it) return;
+  confirmarInline($('#falta-slot'), `Marcar ${it.codigo} como em falta? Fica registrado como pendência.`, 'Marcar falta', () => {
+    it.status = 'falta'; conf.erros.push({ hora:agora().toISOString(), tipo:'falta', msg:`${it.codigo} marcado em falta (${fmtQ(it.qtd)} ${it.und}).`, lido:'' });
+    avancar(`${it.codigo} marcado em falta.`);
+  });
+}
+function finalizar(){
   conf.fim = agora().toISOString(); salvarConf();
-  registrarHistorico('completo', []);
-  bip('fim'); desenharConf();
+  const faltas = conf.itens.filter(i => i.status !== 'ok');
+  registrarHistorico(faltas.length ? 'pendente' : 'completo', faltas.map(i => `${i.codigo} (${fmtQ(i.qtd)} ${i.und})`));
+  bip(faltas.length ? 'erro' : 'fim'); desenharConf();
+  mensagem(faltas.length ? 'Conferência encerrada com pendência.' : 'Pedido completo.', faltas.length ? 'warn' : 'ok');
 }
 function registrarHistorico(status, pendentes){
   const dur = Math.round((new Date(conf.fim) - new Date(conf.inicio)) / 1000);
-  historico.push({ numero:conf.numero, cliente:conf.cliente, operador:conf.operador || '', inicio:conf.inicio, fim:conf.fim, duracao:dur, erros:conf.erros.length, detalhes:conf.erros.map(e => e.msg), status, pendentes });
+  const erros = conf.erros.filter(e => e.tipo !== 'falta');
+  historico.push({ numero:conf.numero, cliente:conf.cliente, operador:conf.operador || '', inicio:conf.inicio, fim:conf.fim, duracao:dur, erros:erros.length, detalhes:erros.map(e => e.msg), status, pendentes });
   gravar(K.hist, historico); desenharListaPedidos();
 }
 
@@ -745,31 +833,53 @@ function desenharConf(){
   $('#conf-titulo').textContent = 'Pedido ' + conf.numero + ' · ' + conf.cliente;
   $('#conf-sub').textContent = (conf.obs ? 'Obs.: ' + conf.obs + ' · ' : '') + 'Iniciado em ' + hhmm(conf.inicio);
   $('#operador').value = conf.operador || '';
-  $('#modo').value = conf.modo || 'digitar';
-  const loc = c => (catalogo[c] && catalogo[c].local) || '';
-  const ord = [...conf.itens].sort((a,b) => ((a.conf>=a.qtd) - (b.conf>=b.qtd)) || (loc(a.codigo)||'~').localeCompare(loc(b.codigo)||'~', 'pt-BR', { numeric:true }));
-  $('#conf-itens').innerHTML = ord.map(it => {
-    const st = it.conf >= it.qtd ? 'ok' : it.conf > 0 ? 'partial' : 'todo';
-    const pill = st === 'ok' ? '<span class="pill ok">Conferido</span>' : st === 'partial' ? '<span class="pill warn">Em andamento</span>' : '<span class="pill idle">Falta</span>';
-    return `<div class="it ${st}" data-cod="${esc(it.codigo)}"><div>${pill}</div><div style="min-width:0"><div class="code">${esc(it.codigo)} ${loc(it.codigo) ? `<span class="loc">· ${esc(loc(it.codigo))}</span>` : ''}</div><div class="nm">${esc(it.nome)}</div></div><div class="qq">${fmtQ(it.conf)} / ${fmtQ(it.qtd)} <span style="font-size:13px">${esc(it.und)}</span></div></div>`;
+  $('#modo').value = conf.modo;
+  document.querySelectorAll('#passos span').forEach(s => s.classList.toggle('on', !conf.fim && s.dataset.f === conf.fase));
+  const it = atual();
+  const box = $('#atual');
+  if (conf.fim || !it){ box.innerHTML = ''; }
+  else {
+    const fase = conf.fase;
+    box.innerHTML = `
+      <div class="at-top"><span class="eyebrow">Item ${it.seq} de ${conf.itens.length}</span>${it.local ? `<span class="loc">LOCAL ${esc(it.local)}</span>` : ''}</div>
+      <div class="at-cod">${esc(it.codigo)}</div>
+      <div class="muted">${esc(it.nome)}</div>
+      <div class="at-q">${fmtQ(it.qtd)} <small>${esc(it.und)}</small></div>
+      <div class="at-acao">
+        ${fase === 'papel' ? `<span class="pill idle">Aguardando o papel: ${codPapel(conf.numero, it.seq)}</span>` : ''}
+        ${fase === 'prateleira' ? `<span class="pill warn">Aguardando a etiqueta da prateleira</span>` : ''}
+        ${fase === 'contagem' ? `<span class="pill ok">Liberado para coleta</span>
+          ${conf.modo === 'digitar' ? `<label for="qtd" style="font-weight:600">Quantidade contada</label><input type="text" id="qtd" inputmode="decimal" autocomplete="off">` : ''}
+          <button class="btn primary" id="btn-ok">OK, contei ${conf.modo === 'digitar' ? '' : fmtQ(it.qtd) + ' ' + esc(it.und)}</button>` : ''}
+        <button class="btn" id="btn-falta">Item em falta</button>
+      </div>
+      <div id="falta-slot"></div>`;
+    const ok = $('#btn-ok'); if (ok) ok.onclick = confirmarContagem;
+    $('#btn-falta').onclick = marcarFalta;
+    const q = $('#qtd'); if (q) q.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); confirmarContagem(); } });
+  }
+  $('#conf-itens').innerHTML = conf.itens.map((i,k) => {
+    const st = i.status === 'ok' ? 'ok' : i.status === 'falta' ? 'falta' : k === conf.idx && !conf.fim ? 'partial' : 'todo';
+    const pill = { ok:'<span class="pill ok">Conferido</span>', falta:'<span class="pill bad">Em falta</span>', partial:'<span class="pill warn">Agora</span>', todo:'<span class="pill idle">Aguardando</span>' }[st];
+    return `<div class="it ${st}" data-cod="${esc(i.codigo)}"><div>${pill}</div><div style="min-width:0"><div class="code">${i.seq}. ${esc(i.codigo)} ${i.local ? `<span class="loc">· ${esc(i.local)}</span>` : ''}</div><div class="nm">${esc(i.nome)}</div></div><div class="qq">${fmtQ(i.qtd)} <span style="font-size:13px">${esc(i.und)}</span></div></div>`;
   }).join('');
-  const nOk = conf.itens.filter(i => i.conf >= i.qtd).length;
-  $('#conf-prog-txt').textContent = `${nOk} de ${conf.itens.length} produto(s) conferido(s)`;
+  const nOk = conf.itens.filter(i => i.status !== 'pendente').length;
+  $('#conf-prog-txt').textContent = `${conf.itens.filter(i => i.status === 'ok').length} de ${conf.itens.length} item(ns) conferido(s)`;
   $('#conf-prog').style.width = (100 * nOk / conf.itens.length) + '%';
-  $('#conf-erros').innerHTML = conf.erros.length ? `<span class="pill bad">${conf.erros.length} erro(s) nesta conferência</span>` : '<span class="pill ok">Sem erros</span>';
+  const nErr = conf.erros.filter(e => e.tipo !== 'falta').length;
+  $('#conf-erros').innerHTML = nErr ? `<span class="pill bad">${nErr} erro(s) nesta conferência</span>` : '<span class="pill ok">Sem erros</span>';
   $('#errlog').innerHTML = conf.erros.length ? conf.erros.slice().reverse().map(e => `<div><span class="mono muted">${new Date(e.hora).toLocaleTimeString('pt-BR')}</span><span>${esc(e.msg)}</span></div>`).join('') : '<span class="muted">Nenhuma.</span>';
   const d = $('#conf-done');
   if (conf.fim){
     const dur = Math.round((new Date(conf.fim) - new Date(conf.inicio))/60000);
-    const h = historico[historico.length-1];
-    const pend = h && h.numero === conf.numero && h.status === 'pendente';
+    const faltas = conf.itens.filter(i => i.status !== 'ok');
     d.hidden = false;
-    d.style.borderColor = pend ? 'var(--warn)' : 'var(--ok)'; d.style.background = pend ? 'var(--warn-soft)' : 'var(--ok-soft)';
-    d.innerHTML = pend
-      ? `<strong style="color:var(--warn)">Pedido ${esc(conf.numero)} encerrado com pendência</strong><span>Faltando: ${esc(h.pendentes.join(', '))}</span>`
-      : `<strong>Pedido ${esc(conf.numero)} conferido</strong><span>${conf.itens.length} produto(s) · ${dur} min · ${conf.erros.length} erro(s) de leitura${conf.operador ? ' · ' + esc(conf.operador) : ''}</span><span class="muted">Pode embalar. Bipe o próximo pedido (PED…) para começar outro.</span>`;
+    d.style.borderColor = faltas.length ? 'var(--warn)' : 'var(--ok)'; d.style.background = faltas.length ? 'var(--warn-soft)' : 'var(--ok-soft)';
+    d.innerHTML = faltas.length
+      ? `<strong style="color:var(--warn)">Pedido ${esc(conf.numero)} encerrado com pendência</strong><span>Faltando: ${esc(faltas.map(i => i.codigo).join(', '))}</span>`
+      : `<strong>Pedido ${esc(conf.numero)} conferido</strong><span>${conf.itens.length} item(ns) · ${dur} min · ${nErr} erro(s)${conf.operador ? ' · ' + esc(conf.operador) : ''}</span><span class="muted">Pode embalar.</span>`;
     d.insertAdjacentHTML('beforeend', '<div><button class="btn" id="btn-proximo">Conferir outro pedido</button></div>');
-    $('#btn-proximo').onclick = () => { conf = null; salvarConf(); try{ localStorage.removeItem(K.conf); }catch(e){} $('#conf-done').hidden = true; desenharConf(); focarLeitura(); };
+    $('#btn-proximo').onclick = () => { conf = null; try{ localStorage.removeItem(K.conf); }catch(e){} $('#conf-done').hidden = true; desenharConf(); focarLeitura(); };
     $('#scan').disabled = true; $('#scan').placeholder = 'Conferência encerrada';
   } else { d.hidden = true; $('#scan').disabled = false; $('#scan').placeholder = 'Aguardando leitura…'; }
 }
@@ -779,14 +889,12 @@ function confirmarInline(slot, texto, rotulo, acao){
   slot.querySelector('[data-a=sim]').onclick = () => { slot.innerHTML = ''; acao(); };
   slot.querySelector('[data-a=nao]').onclick = () => { slot.innerHTML = ''; focarLeitura(); };
 }
-$('#btn-reiniciar').onclick = () => confirmarInline($('#confirm-slot'), 'Zerar todas as leituras deste pedido?', 'Zerar', () => { const n = conf.numero; iniciarConferencia(n); });
+$('#btn-reiniciar').onclick = () => confirmarInline($('#confirm-slot'), 'Zerar todas as leituras deste pedido?', 'Zerar', () => { iniciarConferencia(conf.numero); });
 $('#btn-pend').onclick = () => {
   if (!conf || conf.fim) return;
-  const falta = conf.itens.filter(i => i.conf < i.qtd);
-  confirmarInline($('#confirm-slot'), `Encerrar com ${falta.length} produto(s) faltando? Fica registrado no histórico.`, 'Encerrar', () => {
-    conf.fim = agora().toISOString(); salvarConf();
-    registrarHistorico('pendente', falta.map(i => `${i.codigo} (${fmtQ(i.qtd - i.conf)} ${i.und})`));
-    desenharConf();
+  const falta = conf.itens.filter(i => i.status === 'pendente');
+  confirmarInline($('#confirm-slot'), `Encerrar com ${falta.length} item(ns) sem conferir? Fica registrado no histórico.`, 'Encerrar', () => {
+    falta.forEach(i => i.status = 'falta'); finalizar();
   });
 };
 
@@ -858,6 +966,72 @@ $('#etq-imprimir').onclick = () => {
   imprimir(frag, `@page{ size:${w}mm ${h}mm; margin:0 }`);
 };
 
+/* ---------- importar / exportar cadastro ---------- */
+function semAcento(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase(); }
+function parseCadastro(txt){
+  const linhas = String(txt||'').replace(/^﻿/, '').split(/\r?\n/).filter(l => l.trim());
+  if (!linhas.length) return [];
+  const sep = linhas[0].includes('\t') ? '\t' : linhas[0].includes(';') ? ';' : ',';
+  const cel = l => l.split(sep).map(c => c.trim().replace(/^"(.*)"$/, '$1').replace(/""/g, '"').trim());
+  let ci = 0, di = 1, li = 2, ini = 0;
+  const h = cel(linhas[0]).map(semAcento);
+  if (h.some(x => /^cod/.test(x))){
+    ci = h.findIndex(x => /^cod/.test(x));
+    di = h.findIndex(x => /desc|nome|produto/.test(x));
+    li = h.findIndex(x => /local|prateleira|endereco|posicao/.test(x));
+    ini = 1;
+  }
+  const out = [];
+  for (const l of linhas.slice(ini)){
+    const c = cel(l); const cod = normCod(c[ci]);
+    if (!cod) continue;
+    out.push({ codigo:cod, nome:di >= 0 ? (c[di]||'') : '', local:li >= 0 ? (c[li]||'').toUpperCase() : '' });
+  }
+  return out;
+}
+function aplicarCadastro(lista, substituir, origem){
+  const antigo = catalogo; const novo = substituir ? {} : { ...catalogo };
+  for (const p of lista){
+    const o = antigo[p.codigo] || {};
+    novo[p.codigo] = { nome:p.nome || o.nome || '', local:p.local || (substituir ? '' : o.local || ''), origem, copias:o.copias || 1, sel:o.sel || false };
+  }
+  catalogo = novo; gravar(K.cat, catalogo);
+}
+$('#imp-arq').onchange = async e => { const f = e.target.files[0]; if (f) $('#imp-txt').value = await f.text(); e.target.value = ''; };
+$('#imp-ok').onclick = () => {
+  const lista = parseCadastro($('#imp-txt').value);
+  if (!lista.length){ $('#imp-msg').textContent = 'Não encontrei nenhum código. Cole as colunas Código e Descrição do Excel.'; return; }
+  const subst = $('#imp-subst').checked;
+  aplicarCadastro(lista, subst, 'manual');
+  $('#imp-txt').value = '';
+  $('#imp-msg').innerHTML = `<span class="pill ok">Importado</span> ${lista.length} produto(s)${subst ? '; o cadastro antigo foi substituído' : ''}. Confira a lista abaixo.`;
+  desenharCatalogo();
+};
+$('#exp-csv').onclick = () => {
+  const cods = Object.keys(catalogo).sort((a,b) => a.localeCompare(b, 'pt-BR', { numeric:true }));
+  const q = v => `"${String(v ?? '').replace(/"/g,'""')}"`;
+  const csv = '﻿' + ['codigo;descricao;local'].concat(cods.map(c => [c, catalogo[c].nome, catalogo[c].local].map(q).join(';'))).join('\r\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type:'text/csv;charset=utf-8' }));
+  a.download = 'produtos.csv'; document.body.append(a); a.click(); a.remove();
+};
+// Se o site tiver um produtos.csv publicado, ele é o cadastro oficial e vale para todos os aparelhos.
+async function sincronizarArquivo(){
+  if (!location.protocol.startsWith('http')) return;
+  try{
+    const r = await fetch('produtos.csv', { cache:'no-store' });
+    if (!r.ok) return;
+    const lista = parseCadastro(await r.text());
+    if (!lista.length) return;
+    const extras = Object.entries(catalogo).filter(([c,d]) => d.origem === 'pedido' && !lista.some(p => p.codigo === c));
+    aplicarCadastro(lista, true, 'arquivo');
+    for (const [c,d] of extras) catalogo[c] = d;
+    gravar(K.cat, catalogo);
+    $('#sync-msg').innerHTML = `<span class="pill ok">Sincronizado</span> Cadastro lido do produtos.csv publicado (${lista.length} produtos).` + (extras.length ? ` ${extras.length} código(s) vindos de pedidos não estão no arquivo: ${esc(extras.map(e => e[0]).join(', '))}.` : '');
+    if (!$('#tab-etq').hidden) desenharCatalogo();
+    if (pedAtual) mostrarPedido(pedAtual.numero);
+  }catch(e){}
+}
+
 /* ---------- histórico ---------- */
 function fmtDur(s){ const m = Math.floor(s/60); return m ? `${m} min ${s%60}s` : `${s}s`; }
 function desenharHistorico(){
@@ -882,11 +1056,11 @@ const ultimos = Object.keys(pedidos);
 if (ultimos.length) mostrarPedido(ultimos.sort((a,b) => (pedidos[b].carregadoEm||'').localeCompare(pedidos[a].carregadoEm||''))[0]);
 desenharConf();
 if (conf && !conf.fim) abrirAba('conf');
+sincronizarArquivo();
 if (!window.pdfjsLib) $('#pdf-status').innerHTML = '<span class="pill bad">Erro</span> O leitor de PDF não carregou.';
+
 /* ---------- app instalável (PWA) ---------- */
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
-}
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { navigator.serviceWorker.register('sw.js').catch(() => {}); }
 </script>
 </body>
 </html>
